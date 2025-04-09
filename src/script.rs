@@ -42,7 +42,6 @@ pub(crate) fn get_script_metadata(
     script_path: &String,
     associations: &[FileAssociation],
 ) -> ScriptMetadata {
-    // Get the script metadata
     let script_pbuf = PathBuf::from(script_path);
     let file_size = fs::metadata(script_path)
         .map(|m| m.len())
@@ -60,30 +59,43 @@ pub(crate) fn get_script_metadata(
         None => (None, None),
     };
 
-    // Find file association from config based on matching exec_runtime,
-    // shebang_interpreter, or extension in that order.
-    let assoc = shebang_interpreter.as_ref().and_then(|name| {
-        associations.iter().find(|assoc| assoc.exec_runtime == *name)
+    // Own the association value instead of borrowing
+    let mut assoc: Option<FileAssociation> = shebang_interpreter.as_ref().and_then(|name| {
+        associations.iter().find(|assoc| assoc.exec_runtime == *name).cloned()
     }).or_else(|| {
         shebang_interpreter.as_ref().and_then(|name| {
             associations
                 .iter()
                 .find(|assoc| assoc.shebang_interpreter.as_deref() == Some(name))
+                .cloned()
         })
     }).or_else(|| {
         extension.as_ref().and_then(|ext| {
             associations
                 .iter()
                 .find(|assoc| assoc.extension.as_deref() == Some(ext))
+                .cloned()
         })
     });
+
+    if assoc.is_none() && shebang_interpreter.is_some() {
+        log_debug!("No association found for shebang interpreter, creating new association");
+        assoc = Some(FileAssociation {
+            shebang_interpreter: shebang_interpreter.clone(),
+            exec_runtime: shebang_interpreter.clone().unwrap_or_default(),
+            exec_argv_override: None,
+            view_runtime: None,
+            extension: None,
+            default_operation: None,
+        });
+    }
 
     let metadata = ScriptMetadata {
         shebang,
         shebang_exe: shebang_interpreter,
         shebang_arg: shebang_argument,
         extension,
-        association: assoc.cloned(),
+        association: assoc,
         file_path: script_pbuf,
         file_size,
     };
@@ -164,6 +176,7 @@ pub(crate) fn get_interpreter(shebang: &str) -> Option<(String, Option<String>)>
 
     let path = Path::new(interpreter);
 
+    // If the interpreter is an absolute path, check if it exists (it probably won't)
     if path.exists() {
         let name = path.file_name()?.to_string_lossy();
 
