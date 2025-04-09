@@ -2,7 +2,7 @@ async function main() {
     console.log("Hello from Deno");
 
     // Test if deno has write permission
-    const fileName = "test.txt";
+    const fileName = "__test.txt";
     try {
         await Deno.writeTextFile(fileName, "Hello from Deno!");
         console.log(`File ${fileName} created successfully.`);
@@ -10,7 +10,7 @@ async function main() {
         console.error(`Failed to create file ${fileName}:`, error);
     }
 
-    const promptExit = prompt("Press Enter to exit...");
+    prompt("Press Enter to exit...");
 }
 
 main();

@@ -4,7 +4,7 @@ async function main() {
     console.log("Hello from Deno");
 
     // Test if deno has write permission
-    const fileName = "test.txt";
+    const fileName = "__test.txt";
     try {
         await Deno.writeTextFile(fileName, "Hello from Deno!");
         console.log(`File ${fileName} created successfully.`);

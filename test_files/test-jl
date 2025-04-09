@@ -1,0 +1,5 @@
+#!/usr/bin/julia
+
+println("Hello from Julia!")
+println("Press Enter to exit...")
+readline()
