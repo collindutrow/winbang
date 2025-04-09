@@ -7,6 +7,7 @@ use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::{fs, io};
+use std::collections::HashMap;
 
 /// Build a command to execute the script.
 ///
@@ -40,21 +41,13 @@ pub(crate) fn build_command(
 
     // If exec_argv_override was found, use it.
     if let Some(arg_string) = &script.association.as_ref().unwrap().exec_argv_override {
-        log_debug!("Exec argv: {:?}", arg_string);
-        if arg_string.contains("$script") {
-            for part in shell_words::split(&arg_string).unwrap_or_default() {
-                if part == "$script" {
-                    command.arg(&script.file_path);
-                } else {
-                    command.arg(part);
-                }
-            }
-        } else {
-            for part in shell_words::split(&arg_string).unwrap_or_default() {
-                command.arg(part);
-            }
-            command.arg(&script.file_path);
-        }
+        let mut vars = HashMap::new();
+        let file_path = script.file_path.to_str().unwrap();
+
+        vars.insert("script", file_path.replace("\\","\\\\"));
+        vars.insert("script_unix", file_path.replace("\\", "/"));
+
+        expand_and_push_args(&mut command, arg_string, &vars);
     } else {
         // No override found, use the default behavior and optional argument
         log_debug!(
@@ -285,4 +278,57 @@ fn resolve_operation(
     }
 
     DefaultOperation::Prompt
+}
+
+/// Expand variable strings inside command arguments and push them to the command.
+/// Modifies the command object directly.
+///
+/// # Arguments
+///
+/// * `command`: Command object to modify.
+/// * `arg_string`: String containing arguments with placeholders.
+/// * `vars`: HashMap of variables to expand.
+///
+/// returns: ()
+///
+/// # Examples
+///
+/// ```
+/// let mut command = Command::new("python");
+/// let arg_string = "arg1 @{{script}} arg2";
+/// let vars = HashMap::new();
+/// vars.insert("script", "example.py".to_string());
+/// expand_and_push_args(&mut command, arg_string, &vars);
+/// ```
+fn expand_and_push_args(command: &mut Command, arg_string: &str, vars: &HashMap<&str, String>) {
+    for part in shell_words::split(arg_string).unwrap_or_default() {
+        let expanded = expand_placeholders(&part, vars);
+        command.arg(expanded);
+    }
+}
+
+/// Expand placeholders in a string using a HashMap.
+///
+/// # Arguments
+///
+/// * `s`: String containing placeholders.
+/// * `vars`: HashMap of variables to expand.
+///
+/// returns: String
+///
+/// # Examples
+///
+/// ```
+/// let s = "Hello @{{name}}!";
+/// let mut vars = HashMap::new();
+/// vars.insert("name", "World".to_string());
+/// let result = expand_placeholders(s, &vars);
+/// ```
+fn expand_placeholders(s: &str, vars: &HashMap<&str, String>) -> String {
+    let mut result = s.to_owned();
+    for (key, val) in vars {
+        let placeholder = format!("@{{{}}}", key);
+        result = result.replace(&placeholder, val);
+    }
+    result
 }

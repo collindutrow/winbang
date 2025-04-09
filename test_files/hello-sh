@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+echo "Hello, world!"
+read -p "Press enter to continue..."
