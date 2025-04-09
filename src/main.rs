@@ -13,11 +13,6 @@ use crate::platform::is_interactive_parent;
 use std::{env, io};
 use std::path::{Path, PathBuf};
 use crate::script::get_script_metadata;
-// TODO Improve error handling and logging
-
-// TODO Rename dispatch to be more inline with Unix terminology
-
-// TODO Improve documentation.
 
 fn main() -> io::Result<()> {
     // Print the current working directory
