@@ -1,4 +1,5 @@
 use crate::log_debug;
+use crate::script::ScriptMetadata;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -7,7 +8,6 @@ use windows::Win32::UI::Controls::{
     TASKDIALOG_BUTTON, TASKDIALOGCONFIG, TDF_ALLOW_DIALOG_CANCELLATION, TaskDialogIndirect,
 };
 use windows::core::PCWSTR;
-use crate::script::ScriptMetadata;
 
 pub(crate) enum UserChoice {
     Run,
@@ -36,12 +36,25 @@ pub(crate) fn interactive_prompt(script: &ScriptMetadata, editor: &str) -> io::R
     const ID_EDIT: i32 = 1002;
     const ID_CANCEL: i32 = 1003;
 
+    let script_name = &script
+        .file_path
+        .file_name()
+        .and_then(|s| s.to_str())
+        .unwrap_or_default();
+
     // UTF-16 strings for buttons and dialog
     let run_text: Vec<u16> = "Run\0".encode_utf16().collect();
-    let edit_text: Vec<u16> = "Open\0".encode_utf16().collect();
+    let edit_text: Vec<u16> = "Display\0".encode_utf16().collect();
     let cancel_text: Vec<u16> = "Cancel\0".encode_utf16().collect();
-    let title: Vec<u16> = "Script Execution\0".encode_utf16().collect();
-    let content: Vec<u16> = "Do you want to run the script?\0".encode_utf16().collect();
+
+    let title: Vec<u16> = format!(
+        "Do you want to run \"{}\", or display its contents?\0",
+        script_name
+    )
+    .encode_utf16()
+    .collect();
+
+    let content: Vec<u16> = format!("\"{}\" is an executable text file.\0", script_name).encode_utf16().collect();
 
     let buttons = [
         TASKDIALOG_BUTTON {
@@ -61,7 +74,7 @@ pub(crate) fn interactive_prompt(script: &ScriptMetadata, editor: &str) -> io::R
     let mut selected_button: i32 = 0;
 
     let config = TASKDIALOGCONFIG {
-        cbSize: std::mem::size_of::<TASKDIALOGCONFIG>() as u32,
+        cbSize: size_of::<TASKDIALOGCONFIG>() as u32,
         hwndParent: HWND(std::ptr::null_mut()),
         hInstance: HINSTANCE(std::ptr::null_mut()),
         pszWindowTitle: PCWSTR(title.as_ptr()),
@@ -89,7 +102,10 @@ pub(crate) fn interactive_prompt(script: &ScriptMetadata, editor: &str) -> io::R
                 script, editor_path
             ));
 
-            match Command::new(editor_path).arg::<&PathBuf>(&script.file_path).spawn() {
+            match Command::new(editor_path)
+                .arg::<&PathBuf>(&script.file_path)
+                .spawn()
+            {
                 Ok(mut child) => {
                     if let Err(e) = child.wait() {
                         log_debug!(&format!("Editor wait() failed: {}", e));
