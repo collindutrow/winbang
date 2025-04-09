@@ -68,6 +68,7 @@ pub(crate) fn interactive_prompt(script: &ScriptMetadata, editor: &str) -> io::R
         pszContent: PCWSTR(content.as_ptr()),
         cButtons: buttons.len() as u32,
         pButtons: buttons.as_ptr(),
+        nDefaultButton: ID_CANCEL,
         dwFlags: TDF_ALLOW_DIALOG_CANCELLATION,
         ..Default::default()
     };
