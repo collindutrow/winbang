@@ -1,9 +1,9 @@
+use crate::gui::UserChoice;
 use crate::log_debug;
 use crate::platform::resolve_executable;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
-use crate::gui::UserChoice;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Config {
@@ -65,16 +65,23 @@ pub(crate) fn find_config_path() -> Option<PathBuf> {
     if current.exists() {
         selected = Some(current.clone());
 
-        log_debug!(&format!("Found config in current directory: {:?}", current));
+        log_debug!(&format!(
+            "Found config in current directory: {:?}",
+            current
+        ));
     }
 
     if selected.is_none() {
         if let Ok(programdata) = env::var("PROGRAMDATA") {
-            let pd_config = Path::new(&programdata).join("Winbang").join("config.toml");
+            let pd_config =
+                Path::new(&programdata).join("Winbang").join("config.toml");
             if pd_config.exists() {
                 selected = Some(pd_config.clone());
 
-                log_debug!(&format!("Found config in PROGRAMDATA: {:?}", pd_config));
+                log_debug!(&format!(
+                    "Found config in PROGRAMDATA: {:?}",
+                    pd_config
+                ));
             }
         }
     }
@@ -84,7 +91,8 @@ pub(crate) fn find_config_path() -> Option<PathBuf> {
         let ad_config = Path::new(&appdata).join("Winbang").join("config.toml");
         if ad_config.exists() {
             if let Ok(programdata) = env::var("PROGRAMDATA") {
-                let pd_config = Path::new(&programdata).join("Winbang").join("config.toml");
+                let pd_config =
+                    Path::new(&programdata).join("Winbang").join("config.toml");
                 if let Ok(cfg_str) = fs::read_to_string(&pd_config) {
                     if let Ok(cfg) = toml::from_str::<toml::Value>(&cfg_str) {
                         let allow_user = cfg
@@ -93,7 +101,10 @@ pub(crate) fn find_config_path() -> Option<PathBuf> {
                             .unwrap_or(false);
 
                         if allow_user {
-                            log_debug!(&format!("Overriding with APPDATA config: {:?}", ad_config));
+                            log_debug!(&format!(
+                                "Overriding with APPDATA config: {:?}",
+                                ad_config
+                            ));
 
                             return Some(ad_config);
                         } else if cfg!(debug_assertions) {
@@ -213,7 +224,10 @@ pub(crate) fn load_config(config_path: &Path) -> Config {
     if let Ok(config_str) = fs::read_to_string(config_path) {
         toml::from_str(&config_str).unwrap_or(default_config)
     } else {
-        log_debug!(&format!("Error: Failed to read config file: {:?}", config_path));
+        log_debug!(&format!(
+            "Error: Failed to read config file: {:?}",
+            config_path
+        ));
         default_config
     }
 }

@@ -54,32 +54,44 @@ pub(crate) fn get_script_metadata(
         .map(|s| s.to_string());
 
     let shebang_raw = shebang.as_deref().unwrap_or("");
-    let (shebang_interpreter, shebang_argument) = match get_interpreter(shebang_raw) {
-        Some((interpreter, argument)) => (Some(interpreter), argument),
-        None => (None, None),
-    };
+    let (shebang_interpreter, shebang_argument) =
+        match get_interpreter(shebang_raw) {
+            Some((interpreter, argument)) => (Some(interpreter), argument),
+            None => (None, None),
+        };
 
     // Own the association value instead of borrowing
-    let mut assoc: Option<FileAssociation> = shebang_interpreter.as_ref().and_then(|name| {
-        associations.iter().find(|assoc| assoc.exec_runtime == *name).cloned()
-    }).or_else(|| {
-        shebang_interpreter.as_ref().and_then(|name| {
+    let mut assoc: Option<FileAssociation> = shebang_interpreter
+        .as_ref()
+        .and_then(|name| {
             associations
                 .iter()
-                .find(|assoc| assoc.shebang_interpreter.as_deref() == Some(name))
+                .find(|assoc| assoc.exec_runtime == *name)
                 .cloned()
         })
-    }).or_else(|| {
-        extension.as_ref().and_then(|ext| {
-            associations
-                .iter()
-                .find(|assoc| assoc.extension.as_deref() == Some(ext))
-                .cloned()
+        .or_else(|| {
+            shebang_interpreter.as_ref().and_then(|name| {
+                associations
+                    .iter()
+                    .find(|assoc| {
+                        assoc.shebang_interpreter.as_deref() == Some(name)
+                    })
+                    .cloned()
+            })
         })
-    });
+        .or_else(|| {
+            extension.as_ref().and_then(|ext| {
+                associations
+                    .iter()
+                    .find(|assoc| assoc.extension.as_deref() == Some(ext))
+                    .cloned()
+            })
+        });
 
     if assoc.is_none() && shebang_interpreter.is_some() {
-        log_debug!("No association found for shebang interpreter, creating new association");
+        log_debug!(
+            "No association found for shebang interpreter, creating new association"
+        );
         assoc = Some(FileAssociation {
             shebang_interpreter: shebang_interpreter.clone(),
             exec_runtime: shebang_interpreter.clone().unwrap_or_default(),
@@ -163,7 +175,9 @@ pub(crate) fn read_shebang(path: &Path) -> Option<String> {
 /// let shebang_line = "#!/usr/bin/env python3";
 /// let result = get_interpreter(shebang_line);
 /// ```
-pub(crate) fn get_interpreter(shebang: &str) -> Option<(String, Option<String>)> {
+pub(crate) fn get_interpreter(
+    shebang: &str,
+) -> Option<(String, Option<String>)> {
     let mut parts = shebang.trim_start_matches("#!").trim().split_whitespace();
 
     let interpreter = parts.next()?;
@@ -182,7 +196,10 @@ pub(crate) fn get_interpreter(shebang: &str) -> Option<(String, Option<String>)>
 
         if name == "env" {
             let arg_val = arg.map(|s| s.to_string());
-            log_debug!(&format!("Found env interpreter: {:?}, arg: {:?}", interpreter, arg_val));
+            log_debug!(&format!(
+                "Found env interpreter: {:?}, arg: {:?}",
+                interpreter, arg_val
+            ));
             return Some(("env".to_string(), arg_val));
         }
 
@@ -193,14 +210,20 @@ pub(crate) fn get_interpreter(shebang: &str) -> Option<(String, Option<String>)>
     let basename = path.file_name()?.to_string_lossy().into_owned();
 
     if resolve_executable(&basename).is_some() {
-        log_debug!(&format!("Found interpreter in PATH: {:?}, arg: {:?}", basename, arg));
+        log_debug!(&format!(
+            "Found interpreter in PATH: {:?}, arg: {:?}",
+            basename, arg
+        ));
         return Some((basename, arg.map(|s| s.to_string())));
     }
 
     if basename == "env" {
         if let Some(arg) = arg {
             if resolve_executable(arg).is_some() {
-                log_debug!(&format!("Found env interpreter in PATH: {:?}, arg: {:?}", arg, arg));
+                log_debug!(&format!(
+                    "Found env interpreter in PATH: {:?}, arg: {:?}",
+                    arg, arg
+                ));
                 return Some((arg.to_string(), None));
             }
         }

@@ -10,9 +10,9 @@ use crate::dispatch::{
     build_command, handle_fallback_dispatch, handle_interactive_dispatch,
 };
 use crate::platform::is_interactive_parent;
-use std::{env, io};
-use std::path::{Path, PathBuf};
 use crate::script::get_script_metadata;
+use std::path::{Path, PathBuf};
+use std::{env, io};
 
 fn main() -> io::Result<()> {
     // Print the current working directory
@@ -27,12 +27,13 @@ fn main() -> io::Result<()> {
         return Ok(());
     }
 
-    let config_path = find_config_path().unwrap_or_else(|| PathBuf::from("config.toml"));
+    let config_path =
+        find_config_path().unwrap_or_else(|| PathBuf::from("config.toml"));
     let config = load_config(&config_path);
 
     let script = get_script_metadata(
         &args[1],
-        config.file_associations.as_deref().unwrap_or(&[])
+        config.file_associations.as_deref().unwrap_or(&[]),
     );
 
     if script.association.is_some() {
@@ -40,7 +41,8 @@ fn main() -> io::Result<()> {
         log_debug!("command = {:?}", command);
 
         // Check if the parent process is a recognized GUI shell
-        if is_interactive_parent(&config.gui_shells.clone().unwrap_or_default()) {
+        if is_interactive_parent(&config.gui_shells.clone().unwrap_or_default())
+        {
             log_debug!(&format!("Script executed (interactive): {:?}", script));
             handle_interactive_dispatch(&script, &mut command, &config)?;
         } else {

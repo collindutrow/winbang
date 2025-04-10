@@ -1,13 +1,13 @@
-use crate::config::{Config, DefaultOperation, FileAssociation};
-use crate::gui::{UserChoice, interactive_prompt};
+use crate::config::{Config, DefaultOperation};
+use crate::gui::{interactive_prompt, UserChoice};
 use crate::log_debug;
 use crate::platform::resolve_executable;
-use crate::script::{get_interpreter, ScriptMetadata};
+use crate::script::ScriptMetadata;
+use std::collections::HashMap;
 use std::io::BufRead;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::{fs, io};
-use std::collections::HashMap;
 
 /// Build a command to execute the script.
 ///
@@ -31,28 +31,25 @@ pub(crate) fn build_command(
     script: &ScriptMetadata,
     config: &Config,
 ) -> Command {
-    log_debug!(
-        "build_command({:?}, {:?})",
-        script,
-        &config
-    );
+    log_debug!("build_command({:?}, {:?})", script, &config);
 
-    let mut command = Command::new(&script.association.as_ref().unwrap().exec_runtime);
+    let mut command =
+        Command::new(&script.association.as_ref().unwrap().exec_runtime);
 
     // If exec_argv_override was found, use it.
-    if let Some(arg_string) = &script.association.as_ref().unwrap().exec_argv_override {
+    if let Some(arg_string) =
+        &script.association.as_ref().unwrap().exec_argv_override
+    {
         let mut vars = HashMap::new();
         let file_path = script.file_path.to_str().unwrap();
 
-        vars.insert("script", file_path.replace("\\","\\\\"));
+        vars.insert("script", file_path.replace("\\", "\\\\"));
         vars.insert("script_unix", file_path.replace("\\", "/"));
 
         expand_and_push_args(&mut command, arg_string, &vars);
     } else {
         // No override found, use the default behavior and optional argument
-        log_debug!(
-            "No exec argv override found, using default behavior"
-        );
+        log_debug!("No exec argv override found, using default behavior");
 
         if let Some(arg) = &script.shebang_arg {
             command.arg(arg);
@@ -100,23 +97,29 @@ pub(crate) fn handle_interactive_dispatch(
     log_debug!("Operation resolved: {:?}", operation);
 
     match operation {
-        DefaultOperation::Prompt => match interactive_prompt(script, &editor)? {
-            UserChoice::Run => {
-                let mut child = command.spawn()?;
-                child.wait()?;
-                log_debug!(&format!("Script executed: {:?}", script));
+        DefaultOperation::Prompt => {
+            match interactive_prompt(script, &editor)? {
+                UserChoice::Run => {
+                    let mut child = command.spawn()?;
+                    child.wait()?;
+                    log_debug!(&format!("Script executed: {:?}", script));
+                }
+                UserChoice::Edit => { /* already handled */ }
+                UserChoice::Exit => { /* do nothing */ }
             }
-            UserChoice::Edit => { /* already handled */ }
-            UserChoice::Exit => { /* do nothing */ }
-        },
+        }
         DefaultOperation::Execute => {
             let mut child = command.spawn()?;
             child.wait()?;
             log_debug!(&format!("Script auto-executed: {:?}", script));
         }
         DefaultOperation::Open => {
-            let editor_path = which::which(&editor).unwrap_or_else(|_| PathBuf::from("notepad"));
-            Command::new(editor_path).arg::<&PathBuf>(&script.file_path).spawn()?.wait()?;
+            let editor_path = which::which(&editor)
+                .unwrap_or_else(|_| PathBuf::from("notepad"));
+            Command::new(editor_path)
+                .arg::<&PathBuf>(&script.file_path)
+                .spawn()?
+                .wait()?;
             log_debug!(&format!(
                 "Script opened in editor: {:?} -> {:?}",
                 editor, script
@@ -142,16 +145,28 @@ pub(crate) fn handle_interactive_dispatch(
 /// let script_path = Path::new("example_script.sh");
 /// handle_fallback_dispatch(script_path, &config)?;
 /// ```
-pub(crate) fn handle_fallback_dispatch(script: &ScriptMetadata, config: &Config) -> io::Result<()> {
+pub(crate) fn handle_fallback_dispatch(
+    script: &ScriptMetadata,
+    config: &Config,
+) -> io::Result<()> {
     let metadata = fs::metadata(&script.file_path)?;
     let size_mb = metadata.len() / 1_048_576;
 
-    let (fallback_util, fallback_args) = if let Some(default_large) = &config.default_large {
-        if size_mb >= default_large.size_mb_threshold {
-            (
-                &default_large.view_runtime,
-                default_large.args.as_deref().unwrap_or("$script"),
-            )
+    let (fallback_util, fallback_args) =
+        if let Some(default_large) = &config.default_large {
+            if size_mb >= default_large.size_mb_threshold {
+                (
+                    &default_large.view_runtime,
+                    default_large.args.as_deref().unwrap_or("$script"),
+                )
+            } else if let Some(default) = &config.default {
+                (
+                    &default.view_runtime,
+                    default.args.as_deref().unwrap_or("$script"),
+                )
+            } else {
+                (&"notepad".to_string(), "$script")
+            }
         } else if let Some(default) = &config.default {
             (
                 &default.view_runtime,
@@ -159,17 +174,10 @@ pub(crate) fn handle_fallback_dispatch(script: &ScriptMetadata, config: &Config)
             )
         } else {
             (&"notepad".to_string(), "$script")
-        }
-    } else if let Some(default) = &config.default {
-        (
-            &default.view_runtime,
-            default.args.as_deref().unwrap_or("$script"),
-        )
-    } else {
-        (&"notepad".to_string(), "$script")
-    };
+        };
 
-    let resolved = which::which(fallback_util).unwrap_or_else(|_| PathBuf::from(fallback_util));
+    let resolved = which::which(fallback_util)
+        .unwrap_or_else(|_| PathBuf::from(fallback_util));
     let mut fallback_cmd = Command::new(resolved);
 
     if fallback_args.contains("$script") {
@@ -212,13 +220,13 @@ pub(crate) fn handle_fallback_dispatch(script: &ScriptMetadata, config: &Config)
 /// ```
 /// let runtime = resolve_view_runtime(&script, &config);
 /// ```
-fn resolve_view_runtime(
-    script: &ScriptMetadata,
-    config: &Config
-) -> String {
+fn resolve_view_runtime(script: &ScriptMetadata, config: &Config) -> String {
     // Priority order: shebang interpreter > file extension > default
-    if let Some(runtime) = script.association.as_ref()
-        .and_then(|a| a.view_runtime.clone()) {
+    if let Some(runtime) = script
+        .association
+        .as_ref()
+        .and_then(|a| a.view_runtime.clone())
+    {
         return runtime;
     }
 
@@ -265,11 +273,13 @@ fn resolve_view_runtime(
 /// ```
 fn resolve_operation(
     script: &ScriptMetadata,
-    config: &Config
+    config: &Config,
 ) -> DefaultOperation {
-    if let Some(op) = script.association
+    if let Some(op) = script
+        .association
         .as_ref()
-        .and_then(|a| a.default_operation.clone()) {
+        .and_then(|a| a.default_operation.clone())
+    {
         return op;
     }
 
@@ -300,7 +310,11 @@ fn resolve_operation(
 /// vars.insert("script", "example.py".to_string());
 /// expand_and_push_args(&mut command, arg_string, &vars);
 /// ```
-fn expand_and_push_args(command: &mut Command, arg_string: &str, vars: &HashMap<&str, String>) {
+fn expand_and_push_args(
+    command: &mut Command,
+    arg_string: &str,
+    vars: &HashMap<&str, String>,
+) {
     for part in shell_words::split(arg_string).unwrap_or_default() {
         let expanded = expand_placeholders(&part, vars);
         command.arg(expanded);

@@ -3,11 +3,11 @@ use crate::script::ScriptMetadata;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use windows::core::PCWSTR;
 use windows::Win32::Foundation::{HINSTANCE, HWND};
 use windows::Win32::UI::Controls::{
-    TASKDIALOG_BUTTON, TASKDIALOGCONFIG, TDF_ALLOW_DIALOG_CANCELLATION, TaskDialogIndirect,
+    TaskDialogIndirect, TASKDIALOGCONFIG, TASKDIALOG_BUTTON, TDF_ALLOW_DIALOG_CANCELLATION,
 };
-use windows::core::PCWSTR;
 
 pub(crate) enum UserChoice {
     Run,
@@ -54,7 +54,9 @@ pub(crate) fn interactive_prompt(script: &ScriptMetadata, editor: &str) -> io::R
     .encode_utf16()
     .collect();
 
-    let content: Vec<u16> = format!("\"{}\" is an executable text file.\0", script_name).encode_utf16().collect();
+    let content: Vec<u16> = format!("\"{}\" is an executable text file.\0", script_name)
+        .encode_utf16()
+        .collect();
 
     let buttons = [
         TASKDIALOG_BUTTON {

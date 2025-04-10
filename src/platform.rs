@@ -2,11 +2,13 @@ use crate::log_debug;
 use std::path::PathBuf;
 use windows::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
 use windows::Win32::System::Diagnostics::ToolHelp::{
-    CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW, TH32CS_SNAPPROCESS,
+    CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
+    TH32CS_SNAPPROCESS,
 };
 use windows::Win32::System::ProcessStatus::K32GetModuleBaseNameW;
 use windows::Win32::System::Threading::{
-    GetCurrentProcessId, OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ,
+    GetCurrentProcessId, OpenProcess, PROCESS_QUERY_INFORMATION,
+    PROCESS_VM_READ,
 };
 
 /// Check if the parent process is a GUI shell.
@@ -104,8 +106,12 @@ fn get_parent_pid() -> Option<u32> {
 /// ```
 fn get_process_name(pid: u32) -> Option<String> {
     unsafe {
-        let h_process =
-            OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid).ok()?;
+        let h_process = OpenProcess(
+            PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
+            false,
+            pid,
+        )
+        .ok()?;
         if h_process.is_invalid() {
             return None;
         }
