@@ -327,12 +327,21 @@ fn resolve_operation(
 /// ```
 fn expand_and_push_args(
     command: &mut Command,
-    arg_string: &str,
+    arg_str: &str,
     vars: &HashMap<&str, String>,
 ) {
-    for part in shell_words::split(arg_string).unwrap_or_default() {
+    log_debug!(&format!("Expanding arguments with vars: {:?}", vars));
+    
+    // Split the argument string into parts and expand each part
+    for part in shell_words::split(arg_str).unwrap_or_default() {
+        log_debug!(&format!("Expanding part: '{}'", part));
         let expanded = expand_placeholders(&part, vars);
-        command.arg(expanded);
+        
+        // The expanded string may contain multiple arguments as well.
+        for arg in shell_words::split(&expanded).unwrap_or_default() {
+            log_debug!(&format!("Expanded argument: '{}'", arg));
+            command.arg(arg);
+        }
     }
 }
 
