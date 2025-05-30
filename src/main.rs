@@ -20,7 +20,7 @@ fn main() -> io::Result<()> {
     if let Ok(cwd) = env::current_dir() {
         log_debug!(&format!("Current working directory: {:?}", cwd));
     }
-
+    
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage: {} <script>", args[0]);
@@ -35,9 +35,17 @@ fn main() -> io::Result<()> {
         &args[1],
         config.file_associations.as_deref().unwrap_or(&[]),
     );
+    
+    let extra_args: Option<Vec<String>> = if args.len() > 2 {
+        Some(args[2..].to_vec())
+    } else {
+        None
+    };
+    
+    log_debug!(&format!("Extra args passed to runtime: {:?}", extra_args));
 
     if script.association.is_some() {
-        let mut command = build_command(&script, &config);
+        let mut command = build_command(&script, extra_args, &config);
         log_debug!("command = {:?}", command);
 
         // Check if the parent process is a recognized GUI shell

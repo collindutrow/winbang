@@ -97,6 +97,7 @@ extension = "pl"
 `exec_argv_override` will expand the following special variables:
 - `@{script}`: The full script file path with double-backslashes (e.g., `C:\\Users\\username\\test.sh`).
 - `@{script_unix}`: The script file path with forward slashes (e.g., `C:/Users/username/test.sh`).
+- `@{passed_args}`: Additional arguments passed from the runtime to the script interpreter.
 
 **EXTENSIONLESS FILE ASSOCIATION**
 

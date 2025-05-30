@@ -15,10 +15,9 @@ use std::{fs, io};
 ///
 /// # Arguments
 ///
-/// * `interpreter`:
-/// * `extra_arg`:
-/// * `script`:
-/// * `config`:
+/// * `script`: ScriptMetadata containing the script details.
+/// * `extra_args`: Optional additional arguments to pass to the command.
+/// * `config`: Configuration object containing file associations and defaults.
 ///
 /// returns: Command
 ///
@@ -29,6 +28,7 @@ use std::{fs, io};
 /// ```
 pub(crate) fn build_command(
     script: &ScriptMetadata,
+    extra_args: Option<Vec<String>>,
     config: &Config,
 ) -> Command {
     log_debug!("build_command({:?}, {:?})", script, &config);
@@ -45,19 +45,34 @@ pub(crate) fn build_command(
 
         vars.insert("script", file_path.replace("\\", "\\\\"));
         vars.insert("script_unix", file_path.replace("\\", "/"));
+        
+        // Append extra arguments if provided
+        if let Some(extra_args) = extra_args {
+            vars.insert("passed_args", extra_args.join(" "));
+        }
 
         expand_and_push_args(&mut command, arg_string, &vars);
     } else {
         // No override found, use the default behavior and optional argument
         log_debug!("No exec argv override found, using default behavior");
 
+        // If a shebang interpreter argument is specified, use it
         if let Some(arg) = &script.shebang_arg {
             command.arg(arg);
         }
 
+        // Append the script file path
         command.arg(&script.file_path);
+
+        // Append extra arguments if provided
+        if let Some(extra_args) = extra_args {
+            for arg in extra_args {
+                command.arg(arg);
+            }
+        }
     }
 
+    // Set command's standard input/output/error to inherit from parent
     command
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
