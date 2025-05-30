@@ -49,6 +49,8 @@ pub(crate) fn build_command(
         // Append extra arguments if provided
         if let Some(extra_args) = extra_args {
             vars.insert("passed_args", extra_args.join(" "));
+        } else {
+            vars.insert("passed_args", String::new());
         }
 
         expand_and_push_args(&mut command, arg_string, &vars);
