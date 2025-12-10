@@ -333,17 +333,17 @@ fn expand_and_push_args(
     vars: &HashMap<&str, String>,
 ) {
     log_debug!(&format!("Expanding arguments with vars: {:?}", vars));
-    
+
     // Split the argument string into parts and expand each part
     for part in shell_words::split(arg_str).unwrap_or_default() {
         log_debug!(&format!("Expanding part: '{}'", part));
         let expanded = expand_placeholders(&part, vars);
-        
-        // The expanded string may contain multiple arguments as well.
-        for arg in shell_words::split(&expanded).unwrap_or_default() {
-            log_debug!(&format!("Expanded argument: '{}'", arg));
-            command.arg(arg);
-        }
+
+        // Push the expanded argument directly without re-splitting.
+        // The initial shell_words::split already handled quoting,
+        // so re-splitting would break paths with spaces.
+        log_debug!(&format!("Expanded argument: '{}'", expanded));
+        command.arg(expanded);
     }
 }
 
