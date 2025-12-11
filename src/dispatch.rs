@@ -45,15 +45,8 @@ pub(crate) fn build_command(
 
         vars.insert("script", file_path.replace("\\", "\\\\"));
         vars.insert("script_unix", file_path.replace("\\", "/"));
-        
-        // Append extra arguments if provided
-        if let Some(extra_args) = extra_args {
-            vars.insert("passed_args", extra_args.join(" "));
-        } else {
-            vars.insert("passed_args", String::new());
-        }
 
-        expand_and_push_args(&mut command, arg_string, &vars);
+        expand_and_push_args(&mut command, arg_string, &vars, extra_args.as_ref());
     } else {
         // No override found, use the default behavior and optional argument
         log_debug!("No exec argv override found, using default behavior");
@@ -331,13 +324,33 @@ fn expand_and_push_args(
     command: &mut Command,
     arg_str: &str,
     vars: &HashMap<&str, String>,
+    passed_args: Option<&Vec<String>>,
 ) {
     log_debug!(&format!("Expanding arguments with vars: {:?}", vars));
 
     // Split the argument string into parts and expand each part
     for part in shell_words::split(arg_str).unwrap_or_default() {
         log_debug!(&format!("Expanding part: '{}'", part));
+
+        // Special handling for @{passed_args} - expand to multiple separate args
+        if part == "@{passed_args}" {
+            if let Some(args) = passed_args {
+                for arg in args {
+                    log_debug!(&format!("Adding passed argument: '{}'", arg));
+                    command.arg(arg);
+                }
+            }
+            // If no passed_args, don't add anything (no empty args)
+            continue;
+        }
+
         let expanded = expand_placeholders(&part, vars);
+
+        // Skip empty arguments after expansion to avoid passing spurious empty args
+        if expanded.is_empty() {
+            log_debug!("Skipping empty expanded argument");
+            continue;
+        }
 
         // Push the expanded argument directly without re-splitting.
         // The initial shell_words::split already handled quoting,
