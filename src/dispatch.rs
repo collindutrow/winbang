@@ -52,8 +52,12 @@ pub(crate) fn build_command(
         log_debug!("No exec argv override found, using default behavior");
 
         // If a shebang interpreter argument is specified, use it
+        // Split on whitespace to handle env -S flag with multiple args
         if let Some(arg) = &script.shebang_arg {
-            command.arg(arg);
+            // Use shell_words to properly handle quoted strings
+            for part in shell_words::split(arg).unwrap_or_else(|_| vec![arg.clone()]) {
+                command.arg(part);
+            }
         }
 
         // Append the script file path

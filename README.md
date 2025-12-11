@@ -1,18 +1,33 @@
 # Winbang
 
-Winbang provides Nix-like shebang support for Windows. This program makes it possible to execute scripts without needing to specify the interpreter in the command line and without the need for file extensions. It uses the shebang line to determine the interpreter to use, and it can also handle file associations based on file extensions.
+Winbang provides Nix-like shebang support for Windows. This program makes it
+possible to execute scripts without needing to specify the interpreter in the
+command line **and without the need for file extensions.** It uses the shebang
+line to determine the interpreter to use, and it can also handle file
+associations based on file extensions.
 
 When run from a command prompt, it will always attempt to execute the script.
-When run from a GUI such as `explorer.exe`, it will by default prompt the user for an action.
+When run from a GUI such as `explorer.exe`, it will by default prompt the user
+for an action.
 
-This program is extensible and can be configured to associate files by extension or by shebang line, and allowing for shebang runtimes to effectively be proxied. Such as `#!/bin/bash` being proxied to `C:\msys64\msys2_shell.cmd` with the appropriate arguments.
+This program is extensible and can be configured to associate files by extension
+or by shebang line, and allowing for shebang runtimes to effectively be proxied.
+Such as `#!/bin/bash` being proxied to `C:\msys64\msys2_shell.cmd` with the
+appropriate arguments.
 
 > **NOTICE**
 >
-> If a file association does not exist in the config it will attempt to find the interpreter in `PATH`.
-> A prompt for action is shown by default when launched from a GUI shell, disabling this behavior could lead to an increased security risk. The user is responsible for ensuring that files are correct and safe to execute.
+> If a file association does not exist in the config it will attempt to find the
+> interpreter in `PATH`. A prompt for action is shown by default when launched
+> from a GUI shell, disabling this behavior could lead to an increased security
+> risk. The user is responsible for ensuring that files are correct and safe to
+> execute.
 
-`env` shebangs are supported, but `env` itself is ignored and the optional argument is used as the interpreter. For example, `#!/usr/bin/env python3` will be interpreted as `python3`.
+`env` shebangs are supported through very basic emulation rather than invoking
+the actual `env` command. For instance, `#!/usr/bin/env python3` will directly
+execute `python3`. The `-S` flag is also supported, allowing shebangs with
+multiple interpreter arguments such as `#!/usr/bin/env -S python3 -u -O`. No
+other `env` flags are supported.
 
 ## Setup
 
@@ -20,7 +35,9 @@ This program is extensible and can be configured to associate files by extension
 
 `%PROGRAMDATA%/Winbang/config.toml` or `%APPDATA%/Winbang/config.toml`
 
-The configuration files will not merge, only one will be used. If `allow_user_config` is set to true in the `%PROGRAMDATA%` config, then the user config will be used. If not, the `%PROGRAMDATA%` config will be used.
+The configuration files will not merge, only one will be used. If
+`allow_user_config` is set to true in the `%PROGRAMDATA%` config, then the user
+config will be used. If not, the `%PROGRAMDATA%` config will be used.
 
 ```toml
 # allow_user_config = true              # Optional, default is false, only valid in %PROGRAMDATA% config.
@@ -95,15 +112,22 @@ extension = "pl"
 ```
 
 `exec_argv_override` will expand the following special variables:
-- `@{script}`: The full script file path with double-backslashes (e.g., `C:\\Users\\username\\test.sh`).
-- `@{script_unix}`: The script file path with forward slashes (e.g., `C:/Users/username/test.sh`).
-- `@{passed_args}`: Additional arguments passed from the runtime to the script interpreter.
+
+- `@{script}`: The full script file path with double-backslashes (e.g.,
+  `C:\\Users\\username\\test.sh`).
+- `@{script_unix}`: The script file path with forward slashes (e.g.,
+  `C:/Users/username/test.sh`).
+- `@{passed_args}`: Additional arguments passed from the runtime to the script
+  interpreter.
 
 **EXTENSIONLESS FILE ASSOCIATION**
 
-This step is needed to unlock the full potential of this application. Allowing for a Nix like file experience making file extensions much less important and taking advantage of standard shebang lines and shebang-like lines.
+This step is needed to unlock the full potential of this application. Allowing
+for a Nix like file experience making file extensions much less important and
+taking advantage of standard shebang lines and shebang-like lines.
 
 1. Run in an elevated command prompt:
+
 ```batch
 assoc .="No Extension"
 ftype "No Extension"=^"^%PROGRAMFILES%\Winbang\winbang.exe^" "%1"
@@ -111,6 +135,7 @@ assoc "No Extension"\DefaultIcon=%SystemRoot%\System32\imageres.dll,-68
 ```
 
 `DefaultIcon` `imageres.dll` indexes:
+
 - `15` application icon
 - `68` script icon
 - `102` file icon
@@ -132,8 +157,7 @@ async function main() {
     try {
         await Deno.writeTextFile(fileName, "Hello from Deno!");
         console.log(`File ${fileName} created successfully.`);
-    }
-    catch (error) {
+    } catch (error) {
         console.error(`Failed to create file ${fileName}:`, error);
     }
 

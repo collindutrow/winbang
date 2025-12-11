@@ -163,6 +163,8 @@ pub(crate) fn read_shebang(path: &Path) -> Option<String> {
 /// Does not validate that the shebang line is a valid format,
 /// only that it does not exceed the expected number of parts.
 ///
+/// Supports `env -S` flag which allows multiple arguments to be passed.
+///
 /// # Arguments
 ///
 /// * `shebang`: The shebang line to parse.
@@ -183,31 +185,71 @@ pub(crate) fn get_interpreter(
     let interpreter = parts.next()?;
     let arg = parts.next();
 
+    let path = Path::new(interpreter);
+    let basename = path.file_name()?.to_string_lossy().into_owned();
+
+    // Handle env -S flag (allows multiple arguments)
+    if basename == "env" && arg == Some("-S") {
+        let remaining: Vec<&str> = parts.collect();
+        if remaining.is_empty() {
+            log_debug!("Error: env -S requires an interpreter");
+            return None;
+        }
+
+        let env_interpreter = remaining[0];
+        let env_args = if remaining.len() > 1 {
+            Some(remaining[1..].join(" "))
+        } else {
+            None
+        };
+
+        if resolve_executable(env_interpreter).is_some() {
+            log_debug!(&format!(
+                "Found env -S interpreter in PATH: {:?}, args: {:?}",
+                env_interpreter, env_args
+            ));
+            return Some((env_interpreter.to_string(), env_args));
+        }
+
+        log_debug!(&format!(
+            "Error: env -S interpreter not found in PATH: {:?}",
+            env_interpreter
+        ));
+        return None;
+    }
+
+    // Handle env with interpreter name (e.g., #!/usr/bin/env node)
+    if basename == "env" {
+        if let Some(arg) = arg {
+            // Check for extra arguments (not allowed without -S flag)
+            if parts.next().is_some() {
+                log_debug!("Error: Too many parts in env interpreter (use -S flag for multiple args)");
+                return None;
+            }
+
+            if resolve_executable(arg).is_some() {
+                log_debug!(&format!(
+                    "Found env interpreter in PATH: {:?}",
+                    arg
+                ));
+                return Some((arg.to_string(), None));
+            }
+        }
+        // env without a valid interpreter argument
+        return None;
+    }
+
     if parts.next().is_some() {
         log_debug!("Error: Too many parts in interpreter");
         return None;
     }
 
-    let path = Path::new(interpreter);
-
     // If the interpreter is an absolute path, check if it exists (it probably won't)
     if path.exists() {
         let name = path.file_name()?.to_string_lossy();
-
-        if name == "env" {
-            let arg_val = arg.map(|s| s.to_string());
-            log_debug!(&format!(
-                "Found env interpreter: {:?}, arg: {:?}",
-                interpreter, arg_val
-            ));
-            return Some(("env".to_string(), arg_val));
-        }
-
         log_debug!(&format!("Found interpreter: {:?}, arg: {:?}", name, arg));
         return Some((name.into_owned(), arg.map(|s| s.to_string())));
     }
-
-    let basename = path.file_name()?.to_string_lossy().into_owned();
 
     if resolve_executable(&basename).is_some() {
         log_debug!(&format!(
@@ -215,18 +257,6 @@ pub(crate) fn get_interpreter(
             basename, arg
         ));
         return Some((basename, arg.map(|s| s.to_string())));
-    }
-
-    if basename == "env" {
-        if let Some(arg) = arg {
-            if resolve_executable(arg).is_some() {
-                log_debug!(&format!(
-                    "Found env interpreter in PATH: {:?}, arg: {:?}",
-                    arg, arg
-                ));
-                return Some((arg.to_string(), None));
-            }
-        }
     }
 
     log_debug!(&format!(
@@ -280,6 +310,40 @@ mod tests {
     #[test]
     fn test_only_prefix() {
         let line = "#!";
+        let result = get_interpreter(line);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_env_s_flag_with_single_arg() {
+        let line = "#!/usr/bin/env -S node --experimental-modules";
+        let result = get_interpreter(line);
+        assert_eq!(
+            result,
+            Some(("node".to_string(), Some("--experimental-modules".to_string())))
+        );
+    }
+
+    #[test]
+    fn test_env_s_flag_with_multiple_args() {
+        let line = "#!/usr/bin/env -S python3 -u -W ignore";
+        let result = get_interpreter(line);
+        assert_eq!(
+            result,
+            Some(("python3".to_string(), Some("-u -W ignore".to_string())))
+        );
+    }
+
+    #[test]
+    fn test_env_s_flag_no_args() {
+        let line = "#!/usr/bin/env -S node";
+        let result = get_interpreter(line);
+        assert_eq!(result, Some(("node".to_string(), None)));
+    }
+
+    #[test]
+    fn test_env_s_flag_missing_interpreter() {
+        let line = "#!/usr/bin/env -S";
         let result = get_interpreter(line);
         assert_eq!(result, None);
     }
