@@ -1,43 +1,60 @@
 # Winbang
 
-Winbang provides Nix-like shebang support for Windows. This program makes it
-possible to execute scripts without needing to specify the interpreter in the
-command line **and without the need for file extensions.** It uses the shebang
-line to determine the interpreter to use, and it can also handle file
-associations based on file extensions.
-
-When run from a command prompt, it will always attempt to execute the script.
-When run from a GUI such as `explorer.exe`, it will by default prompt the user
-for an action.
-
-This program is extensible and can be configured to associate files by extension
-or by shebang line, and allowing for shebang runtimes to effectively be proxied.
-Such as `#!/bin/bash` being proxied to `C:\msys64\msys2_shell.cmd` with the
-appropriate arguments.
-
-> **NOTICE**
->
-> If a file association does not exist in the config it will attempt to find the
-> interpreter in `PATH`. A prompt for action is shown by default when launched
-> from a GUI shell, disabling this behavior could lead to an increased security
-> risk. The user is responsible for ensuring that files are correct and safe to
-> execute.
-
-`env` shebangs are supported through very basic emulation rather than invoking
-the actual `env` command. For instance, `#!/usr/bin/env python3` will directly
-execute `python3`. The `-S` flag is also supported, allowing shebangs with
-multiple interpreter arguments such as `#!/usr/bin/env -S python3 -u -O`. No
-other `env` flags are supported.
+Winbang adds Unix-like [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) support to Windows, Allowing scripts to run without specifying an interpreter or requiring file extensions. It selects the interpreter from the shebang and can also use file-extension associations when present.
 
 ## Setup
 
-**EXAMPLE CONFIG**
+To get the full benefits of Winbang the following is required:
+
+1. Manually associate desired filetypes to `winbang.exe` (ideally `.sh`, `.zsh`, `.py`, and other common script extensions.)
+2. Follow the instructions for [Extensionless File Association](### Extensionless File Association)
+3. Setup a [config file](## Config File Template) (optional, recommended)
+
+### Extensionless File Association
+
+This unlocks the true potential of Winbang. Allowing for a Unix-like file experience making file extensions much less important and taking advantage of standard shebang lines and shebang-like lines.
+
+1. Run in an **elevated** command prompt:
+
+```batch
+assoc .="No Extension"
+ftype "No Extension"=^"^%PROGRAMFILES%\Winbang\winbang.exe^" "%1"
+assoc "No Extension"\DefaultIcon=%SystemRoot%\System32\imageres.dll,-68
+```
+
+`DefaultIcon` `imageres.dll` indexes:
+
+- `15` application icon
+- `68` script icon
+- `102` file icon
+
+2. Restart computer.
+
+## Behavior
+
+When invoked from a command prompt, Winbang always executes the script. When invoked from a GUI context such as `explorer.exe`, it prompts the user for an action by default.
+
+Winbang is extensible and supports file association by extension or shebang. Shebang runtimes can be proxied, for example mapping `#!/bin/bash` to `C:\msys64\msys2_shell.cmd` with appropriate arguments.
+
+If no matching association exists in the configuration, Winbang searches for the interpreter in `PATH`.
+
+`env` shebangs are supported via basic emulation rather than invoking the `env` binary. For example, `#!/usr/bin/env python3` directly executes `python3`. The `-S` flag is supported, allowing multiple interpreter arguments (e.g. `#!/usr/bin/env -S python3 -u -O`). No other `env` flags are supported.
+
+> **WARNING**
+>
+> By default an action prompt is shown when launched
+> from a GUI shell, disabling this behavior could lead to an increased security
+> risk. (The same risk as running any untrusted application/script.)
+
+## Config File Template
 
 `%PROGRAMDATA%/Winbang/config.toml` or `%APPDATA%/Winbang/config.toml`
 
 The configuration files will not merge, only one will be used. If
 `allow_user_config` is set to true in the `%PROGRAMDATA%` config, then the user
 config will be used. If not, the `%PROGRAMDATA%` config will be used.
+
+`config.toml`
 
 ```toml
 # allow_user_config = true              # Optional, default is false, only valid in %PROGRAMDATA% config.
@@ -79,7 +96,6 @@ shebang_interpreter = "ruby"
 extension = "rb"
 default_operation = "prompt"
 
-
 [[file_associations]]
 exec_runtime = "C:\\msys64\\msys2_shell.cmd"
 view_runtime = "code"
@@ -120,32 +136,11 @@ extension = "pl"
 - `@{passed_args}`: Additional arguments passed from the runtime to the script
   interpreter.
 
-**EXTENSIONLESS FILE ASSOCIATION**
-
-This step is needed to unlock the full potential of this application. Allowing
-for a Nix like file experience making file extensions much less important and
-taking advantage of standard shebang lines and shebang-like lines.
-
-1. Run in an elevated command prompt:
-
-```batch
-assoc .="No Extension"
-ftype "No Extension"=^"^%PROGRAMFILES%\Winbang\winbang.exe^" "%1"
-assoc "No Extension"\DefaultIcon=%SystemRoot%\System32\imageres.dll,-68
-```
-
-`DefaultIcon` `imageres.dll` indexes:
-
-- `15` application icon
-- `68` script icon
-- `102` file icon
-
-2. Restart computer.
-
 ## Example/Test Files
 
 **Deno Script**
 
+`./denotest`
 ```typescript
 #!/usr/bin/env deno
 
@@ -169,6 +164,7 @@ main();
 
 **Ruby Script**
 
+`./rubytest`
 ```ruby
 #!/usr/bin/env ruby
 puts "Hello from Ruby!"
