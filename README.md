@@ -2,6 +2,14 @@
 
 Winbang adds Unix-like [shebang](https://en.wikipedia.org/wiki/Shebang_(Unix)) support to Windows, Allowing scripts to run without specifying an interpreter or requiring file extensions. It selects the interpreter from the shebang and can also use file-extension associations when present.
 
+## Installation
+
+Cargo
+
+```powershell
+cargo install winbang
+```
+
 ## Setup
 
 To get the full benefits of Winbang the following is required:
@@ -16,9 +24,13 @@ This unlocks the true potential of Winbang. Allowing for a Unix-like file experi
 
 1. Run in an **elevated** command prompt:
 
+   > **NOTICE**
+   >
+   > `winbang.exe` path may need adjustment based on your installation.
+
 ```batch
 assoc .="No Extension"
-ftype "No Extension"=^"^%PROGRAMFILES%\Winbang\winbang.exe^" "%1"
+ftype "No Extension"=^"^%USERPROFILE%\.cargo\bin\winbang.exe^" "%1"
 assoc "No Extension"\DefaultIcon=%SystemRoot%\System32\imageres.dll,-68
 ```
 
