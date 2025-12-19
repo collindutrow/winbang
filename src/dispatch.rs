@@ -1,11 +1,10 @@
 use crate::config::{Config, DefaultOperation};
-use crate::gui::{interactive_prompt, UserChoice};
+use crate::gui::{UserChoice, interactive_prompt};
 use crate::log_debug;
 use crate::platform::resolve_executable;
 use crate::script::ScriptMetadata;
 use std::collections::HashMap;
-use std::io::BufRead;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::{fs, io};
 
@@ -29,9 +28,9 @@ use std::{fs, io};
 pub(crate) fn build_command(
     script: &ScriptMetadata,
     extra_args: Option<Vec<String>>,
-    config: &Config,
+    _config: &Config,
 ) -> Command {
-    log_debug!("build_command({:?}, {:?})", script, &config);
+    log_debug!("build_command({:?}, {:?})", script, &_config);
 
     let mut command =
         Command::new(&script.association.as_ref().unwrap().exec_runtime);
@@ -46,7 +45,12 @@ pub(crate) fn build_command(
         vars.insert("script", file_path.replace("\\", "\\\\"));
         vars.insert("script_unix", file_path.replace("\\", "/"));
 
-        expand_and_push_args(&mut command, arg_string, &vars, extra_args.as_ref());
+        expand_and_push_args(
+            &mut command,
+            arg_string,
+            &vars,
+            extra_args.as_ref(),
+        );
     } else {
         // No override found, use the default behavior and optional argument
         log_debug!("No exec argv override found, using default behavior");
@@ -55,7 +59,9 @@ pub(crate) fn build_command(
         // Split on whitespace to handle env -S flag with multiple args
         if let Some(arg) = &script.shebang_arg {
             // Use shell_words to properly handle quoted strings
-            for part in shell_words::split(arg).unwrap_or_else(|_| vec![arg.clone()]) {
+            for part in
+                shell_words::split(arg).unwrap_or_else(|_| vec![arg.clone()])
+            {
                 command.arg(part);
             }
         }

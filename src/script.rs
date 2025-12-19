@@ -7,14 +7,8 @@ use std::{fs, io};
 
 #[derive(Debug)]
 pub struct ScriptMetadata {
-    /// Shebang line minus the prefix
-    pub shebang: Option<String>,
-    /// Interpreter name
-    pub shebang_exe: Option<String>,
     /// Optional argument to the interpreter
     pub shebang_arg: Option<String>,
-    /// Extension of the file
-    pub extension: Option<String>,
     /// File association from the config
     pub association: Option<FileAssociation>,
     /// File path
@@ -103,10 +97,7 @@ pub(crate) fn get_script_metadata(
     }
 
     let metadata = ScriptMetadata {
-        shebang,
-        shebang_exe: shebang_interpreter,
         shebang_arg: shebang_argument,
-        extension,
         association: assoc,
         file_path: script_pbuf,
         file_size,
@@ -223,7 +214,9 @@ pub(crate) fn get_interpreter(
         if let Some(arg) = arg {
             // Check for extra arguments (not allowed without -S flag)
             if parts.next().is_some() {
-                log_debug!("Error: Too many parts in env interpreter (use -S flag for multiple args)");
+                log_debug!(
+                    "Error: Too many parts in env interpreter (use -S flag for multiple args)"
+                );
                 return None;
             }
 
@@ -320,7 +313,10 @@ mod tests {
         let result = get_interpreter(line);
         assert_eq!(
             result,
-            Some(("node".to_string(), Some("--experimental-modules".to_string())))
+            Some((
+                "node".to_string(),
+                Some("--experimental-modules".to_string())
+            ))
         );
     }
 

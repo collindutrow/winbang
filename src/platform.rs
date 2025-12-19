@@ -2,7 +2,7 @@ use crate::log_debug;
 use std::path::PathBuf;
 use windows::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
 use windows::Win32::System::Diagnostics::ToolHelp::{
-    CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
+    CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
     TH32CS_SNAPPROCESS,
 };
 use windows::Win32::System::ProcessStatus::K32GetModuleBaseNameW;
@@ -77,7 +77,7 @@ fn get_parent_pid() -> Option<u32> {
         if Process32FirstW(snapshot, &mut entry).is_ok() {
             loop {
                 if entry.th32ProcessID == current_pid {
-                    CloseHandle(snapshot);
+                    let _ = CloseHandle(snapshot);
                     return Some(entry.th32ParentProcessID);
                 }
                 if Process32NextW(snapshot, &mut entry).is_err() {
@@ -85,7 +85,7 @@ fn get_parent_pid() -> Option<u32> {
                 }
             }
         }
-        CloseHandle(snapshot);
+        let _ = CloseHandle(snapshot);
         None
     }
 }
@@ -118,7 +118,7 @@ fn get_process_name(pid: u32) -> Option<String> {
 
         let mut buffer = [0u16; 260];
         let len = K32GetModuleBaseNameW(h_process, None, &mut buffer);
-        CloseHandle(h_process);
+        let _ = CloseHandle(h_process);
 
         if len == 0 {
             return None;

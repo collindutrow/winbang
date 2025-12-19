@@ -1,13 +1,14 @@
 use crate::log_debug;
 use crate::script::ScriptMetadata;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::process::Command;
-use windows::core::PCWSTR;
 use windows::Win32::Foundation::{HINSTANCE, HWND};
 use windows::Win32::UI::Controls::{
-    TaskDialogIndirect, TASKDIALOGCONFIG, TASKDIALOG_BUTTON, TDF_ALLOW_DIALOG_CANCELLATION,
+    TASKDIALOG_BUTTON, TASKDIALOGCONFIG, TDF_ALLOW_DIALOG_CANCELLATION,
+    TaskDialogIndirect,
 };
+use windows::core::PCWSTR;
 
 pub(crate) enum UserChoice {
     Run,
@@ -31,7 +32,10 @@ pub(crate) enum UserChoice {
 /// let editor = "notepad";
 /// let user_choice = interactive_prompt(script_path, editor)?;
 /// ```
-pub(crate) fn interactive_prompt(script: &ScriptMetadata, editor: &str) -> io::Result<UserChoice> {
+pub(crate) fn interactive_prompt(
+    script: &ScriptMetadata,
+    editor: &str,
+) -> io::Result<UserChoice> {
     const ID_RUN: i32 = 1001;
     const ID_EDIT: i32 = 1002;
     const ID_CANCEL: i32 = 1003;
@@ -54,9 +58,10 @@ pub(crate) fn interactive_prompt(script: &ScriptMetadata, editor: &str) -> io::R
     .encode_utf16()
     .collect();
 
-    let content: Vec<u16> = format!("\"{}\" is an executable text file.\0", script_name)
-        .encode_utf16()
-        .collect();
+    let content: Vec<u16> =
+        format!("\"{}\" is an executable text file.\0", script_name)
+            .encode_utf16()
+            .collect();
 
     let buttons = [
         TASKDIALOG_BUTTON {
@@ -91,13 +96,16 @@ pub(crate) fn interactive_prompt(script: &ScriptMetadata, editor: &str) -> io::R
     unsafe {
         // ComCtl32 v6 is required and is enabled via app.manifest
         TaskDialogIndirect(&config, Some(&mut selected_button), None, None)
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("{e}")))?;
+            .map_err(|e| {
+                io::Error::new(io::ErrorKind::Other, format!("{e}"))
+            })?;
     }
 
     match selected_button {
         ID_RUN => Ok(UserChoice::Run),
         ID_EDIT => {
-            let editor_path = which::which(editor).unwrap_or_else(|_| PathBuf::from("notepad")); // fallback
+            let editor_path = which::which(editor)
+                .unwrap_or_else(|_| PathBuf::from("notepad")); // fallback
 
             log_debug!(&format!(
                 "User chose to edit the script: {:?} with editor: {:?}",
@@ -109,12 +117,12 @@ pub(crate) fn interactive_prompt(script: &ScriptMetadata, editor: &str) -> io::R
                 .spawn()
             {
                 Ok(mut child) => {
-                    if let Err(e) = child.wait() {
-                        log_debug!(&format!("Editor wait() failed: {}", e));
+                    if let Err(_e) = child.wait() {
+                        log_debug!(&format!("Editor wait() failed: {}", _e));
                     }
                 }
-                Err(e) => {
-                    log_debug!(&format!("Editor spawn() failed: {}", e));
+                Err(_e) => {
+                    log_debug!(&format!("Editor spawn() failed: {}", _e));
                 }
             }
 

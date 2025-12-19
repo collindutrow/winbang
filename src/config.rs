@@ -1,4 +1,3 @@
-use crate::gui::UserChoice;
 use crate::log_debug;
 use crate::platform::resolve_executable;
 use serde::Deserialize;

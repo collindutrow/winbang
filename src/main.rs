@@ -11,7 +11,7 @@ use crate::dispatch::{
 };
 use crate::platform::is_interactive_parent;
 use crate::script::get_script_metadata;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::{env, io};
 
 fn main() -> io::Result<()> {
@@ -20,7 +20,7 @@ fn main() -> io::Result<()> {
     if let Ok(cwd) = env::current_dir() {
         log_debug!(&format!("Current working directory: {:?}", cwd));
     }
-    
+
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage: {} <script>", args[0]);
@@ -35,13 +35,13 @@ fn main() -> io::Result<()> {
         &args[1],
         config.file_associations.as_deref().unwrap_or(&[]),
     );
-    
+
     let extra_args: Option<Vec<String>> = if args.len() > 2 {
         Some(args[2..].to_vec())
     } else {
         None
     };
-    
+
     log_debug!(&format!("Extra args passed to runtime: {:?}", extra_args));
 
     if script.association.is_some() {
