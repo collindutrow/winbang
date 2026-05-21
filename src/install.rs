@@ -71,13 +71,20 @@ const VERBS: &[VerbSpec] = &[
 /// Idempotently fill in any missing verb subkeys under
 /// `HKCU\Software\Classes\Applications\<exe-name>\shell`.
 pub fn ensure_verbs_registered() {
+    write_verbs(false);
+}
+
+/// Unconditionally overwrite every verb subkey under
+/// `HKCU\Software\Classes\Applications\<exe-name>\shell`.
+pub fn reinstall_verbs() {
+    write_verbs(true);
+}
+
+fn write_verbs(force: bool) {
     let exe = match env::current_exe() {
         Ok(p) => p,
         Err(e) => {
-            log_debug!(&format!(
-                "ensure_verbs_registered: current_exe() failed: {}",
-                e
-            ));
+            log_debug!(&format!("write_verbs: current_exe() failed: {}", e));
             return;
         }
     };
@@ -86,7 +93,7 @@ pub fn ensure_verbs_registered() {
         Some(s) => s,
         None => {
             log_debug!(
-                "ensure_verbs_registered: could not determine self exe basename; skipping"
+                "write_verbs: could not determine self exe basename; skipping"
             );
             return;
         }
@@ -96,33 +103,30 @@ pub fn ensure_verbs_registered() {
         let verb_key = format!("{}\\{}", shell_root, spec.name);
         let command_key = format!("{}\\command", verb_key);
 
-        // Friendly label: shell\<verb>\(Default).
-        if !value_exists(Root::CurrentUser, &verb_key, "") {
+        if force || !value_exists(Root::CurrentUser, &verb_key, "") {
             let ok = write_string(Root::CurrentUser, &verb_key, "", spec.label);
             log_debug!(&format!(
-                "ensure_verbs_registered: wrote label for {} -> {}",
+                "write_verbs: wrote label for {} -> {}",
                 spec.name, ok
             ));
         } else {
             log_debug!(&format!(
-                "ensure_verbs_registered: label for {} already present, leaving alone",
+                "write_verbs: label for {} already present, leaving alone",
                 spec.name
             ));
         }
 
-        // Don't overwrite existing values as they may have been customized.
-        // Command: shell\<verb>\command\(Default).
-        if !value_exists(Root::CurrentUser, &command_key, "") {
+        if force || !value_exists(Root::CurrentUser, &command_key, "") {
             let command = format!("\"{}\" {}", exe_str, spec.args_template);
             let ok =
                 write_string(Root::CurrentUser, &command_key, "", &command);
             log_debug!(&format!(
-                "ensure_verbs_registered: wrote command for {} -> {} ({})",
+                "write_verbs: wrote command for {} -> {} ({})",
                 spec.name, ok, command
             ));
         } else {
             log_debug!(&format!(
-                "ensure_verbs_registered: command for {} already present, leaving alone",
+                "write_verbs: command for {} already present, leaving alone",
                 spec.name
             ));
         }

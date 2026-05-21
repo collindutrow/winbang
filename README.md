@@ -68,9 +68,9 @@ binary. For example, `#!/usr/bin/env python3` directly executes `python3`. The
 
 > **WARNING**
 >
-> By default, an action prompt is shown when launched from a GUI shell; disabling
-> this behavior could lead to an increased security risk. (The same risk as
-> running any untrusted application/script.)
+> By default, an action prompt is shown when launched from a GUI shell;
+> disabling this behavior could lead to an increased security risk. (The same
+> risk as running any untrusted application/script.)
 
 ## Shell verb pass-through
 
@@ -88,17 +88,30 @@ How it works:
    `open` verb. If that is also absent, Winbang exits non-zero.
 
 > **Tip** When associating Winbang with an extension, pick it via **Explorer**'s
-> "Open with -> Always" rather than `assoc .<ext>=Applications\<winbang-exe>`.
+> "Open with -> Always" rather than `assoc .<ext>=Applications\winbang.exe`.
 > Explorer writes UserChoice, which leaves the original ProgID intact at
 > `HKCR\.<ext>\(Default)`, which is what pass-through reads to find the previous
 > handler.
 >
-> For example: `assoc .py=Applications\<winbang-exe>` would overwrite `.py`'s
+> For example: `assoc .py=Applications\winbang.exe` would overwrite `.py`'s
 > ProgID pointer (`Python.File` -> `Winbang`), making the original handler's
 > verbs unreachable through `.py`.
 
 You can read more about Windows Shell verbs at:
 https://learn.microsoft.com/en-us/windows/win32/shell/fa-verbs
+
+### Repairing Winbang Verbs
+
+The verb subkeys under `HKCU\Software\Classes\Applications\winbang.exe\shell`
+can become stale if you move the executable after using it.
+
+To recover, invoke the moved exe directly with `--reinstall-verbs`:
+
+```powershell
+C:\new\location\winbang.exe --reinstall-verbs
+```
+
+This force-resets every verb Winbang subkey.
 
 ## Config File Template
 
