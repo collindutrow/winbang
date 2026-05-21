@@ -93,6 +93,11 @@ pub(crate) fn get_script_metadata(
             view_runtime: None,
             extension: None,
             default_operation: None,
+            verb_edit: None,
+            verb_print: None,
+            verb_printto: None,
+            verb_runas: None,
+            verb_uiaccess: None,
         });
     }
 

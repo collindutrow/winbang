@@ -42,6 +42,11 @@ pub(crate) struct FileAssociation {
     pub(crate) view_runtime: Option<String>,
     pub(crate) extension: Option<String>,
     pub(crate) default_operation: Option<DefaultOperation>,
+    pub(crate) verb_edit: Option<String>,
+    pub(crate) verb_print: Option<String>,
+    pub(crate) verb_printto: Option<String>,
+    pub(crate) verb_runas: Option<String>,
+    pub(crate) verb_uiaccess: Option<String>,
 }
 
 /// Find the configuration file in the current directory, PROGRAMDATA, or APPDATA.
@@ -156,6 +161,11 @@ pub(crate) fn load_config(config_path: &Path) -> Config {
                 view_runtime: None,
                 default_operation: Option::from(DefaultOperation::Prompt),
                 exec_argv_override: None,
+                verb_edit: None,
+                verb_print: None,
+                verb_printto: None,
+                verb_runas: None,
+                verb_uiaccess: None,
             },
             FileAssociation {
                 shebang_interpreter: Option::from("python".to_string()),
@@ -164,6 +174,11 @@ pub(crate) fn load_config(config_path: &Path) -> Config {
                 view_runtime: None,
                 default_operation: Option::from(DefaultOperation::Prompt),
                 exec_argv_override: None,
+                verb_edit: None,
+                verb_print: None,
+                verb_printto: None,
+                verb_runas: None,
+                verb_uiaccess: None,
             },
             FileAssociation {
                 shebang_interpreter: if resolve_executable("deno").is_some() {
@@ -184,6 +199,11 @@ pub(crate) fn load_config(config_path: &Path) -> Config {
                 view_runtime: None,
                 default_operation: Option::from(DefaultOperation::Prompt),
                 exec_argv_override: None,
+                verb_edit: None,
+                verb_print: None,
+                verb_printto: None,
+                verb_runas: None,
+                verb_uiaccess: None,
             },
             FileAssociation {
                 shebang_interpreter: if resolve_executable("deno").is_some() {
@@ -200,6 +220,11 @@ pub(crate) fn load_config(config_path: &Path) -> Config {
                 view_runtime: None,
                 default_operation: Option::from(DefaultOperation::Prompt),
                 exec_argv_override: None,
+                verb_edit: None,
+                verb_print: None,
+                verb_printto: None,
+                verb_runas: None,
+                verb_uiaccess: None,
             },
             FileAssociation {
                 shebang_interpreter: Option::from("perl".to_string()),
@@ -208,6 +233,11 @@ pub(crate) fn load_config(config_path: &Path) -> Config {
                 view_runtime: None,
                 default_operation: Option::from(DefaultOperation::Prompt),
                 exec_argv_override: None,
+                verb_edit: None,
+                verb_print: None,
+                verb_printto: None,
+                verb_runas: None,
+                verb_uiaccess: None,
             },
             FileAssociation {
                 shebang_interpreter: Option::from("bash".to_string()),
@@ -216,6 +246,11 @@ pub(crate) fn load_config(config_path: &Path) -> Config {
                 view_runtime: None,
                 default_operation: Option::from(DefaultOperation::Prompt),
                 exec_argv_override: None,
+                verb_edit: None,
+                verb_print: None,
+                verb_printto: None,
+                verb_runas: None,
+                verb_uiaccess: None,
             },
         ]),
     };

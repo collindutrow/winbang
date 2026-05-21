@@ -1,9 +1,12 @@
 mod config;
 mod dispatch;
 mod gui;
+mod install;
 mod logging;
 mod platform;
+mod registry;
 mod script;
+mod verb;
 
 use crate::config::{find_config_path, load_config};
 use crate::dispatch::{
@@ -11,8 +14,8 @@ use crate::dispatch::{
 };
 use crate::platform::is_interactive_parent;
 use crate::script::get_script_metadata;
-use std::path::PathBuf;
-use std::{env, io};
+use std::path::{Path, PathBuf};
+use std::{env, io, process};
 
 fn main() -> io::Result<()> {
     // Print the current working directory
@@ -21,10 +24,21 @@ fn main() -> io::Result<()> {
         log_debug!(&format!("Current working directory: {:?}", cwd));
     }
 
+    // Ensure Winbang owns every common verb under its own ProgID.
+    // Fill-in-the-blanks: never overwrites pre-existing values.
+    install::ensure_verbs_registered();
+
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         eprintln!("Usage: {} <script>", args[0]);
         return Ok(());
+    }
+
+    // dispatch-verb subcommand: invoked from Winbang's own registered
+    // shell\<verb>\command keys when Windows routes a non-Open verb to us.
+    if args[1] == "dispatch-verb" {
+        let code = run_dispatch_verb(&args[2..]);
+        process::exit(code);
     }
 
     let config_path =
@@ -68,4 +82,64 @@ fn main() -> io::Result<()> {
     }
 
     Ok(())
+}
+
+/// Parse and run a `dispatch-verb` invocation. Returns the process exit code.
+///
+/// Usage shape:
+///   <exe-name> dispatch-verb --verb <name> --file <path> [extra-args...]
+///
+/// Anything after the recognized flag pairs is treated as extra args to pass
+/// to the underlying command (substituted into `%*` / `%2`).
+fn run_dispatch_verb(args: &[String]) -> i32 {
+    let mut verb: Option<String> = None;
+    let mut file: Option<String> = None;
+    let mut extras: Vec<String> = Vec::new();
+
+    let mut i = 0;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--verb" => {
+                if i + 1 >= args.len() {
+                    eprintln!("--verb requires a value");
+                    return 2;
+                }
+                verb = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--file" => {
+                if i + 1 >= args.len() {
+                    eprintln!("--file requires a value");
+                    return 2;
+                }
+                file = Some(args[i + 1].clone());
+                i += 2;
+            }
+            "--" => {
+                extras.extend_from_slice(&args[i + 1..]);
+                break;
+            }
+            other => {
+                extras.push(other.to_string());
+                i += 1;
+            }
+        }
+    }
+
+    let Some(verb) = verb else {
+        eprintln!("dispatch-verb: --verb is required");
+        return 2;
+    };
+    let Some(file) = file else {
+        eprintln!("dispatch-verb: --file is required");
+        return 2;
+    };
+
+    let config_path =
+        find_config_path().unwrap_or_else(|| PathBuf::from("config.toml"));
+    let config = load_config(&config_path);
+
+    let outcome =
+        verb::dispatch_verb(&verb, Path::new(&file), &extras, &config);
+    outcome.exit_code()
 }
