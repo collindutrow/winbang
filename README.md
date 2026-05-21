@@ -55,7 +55,7 @@ invoked from a GUI context such as `explorer.exe`, it prompts the user for an
 action by default.
 
 Winbang is extensible and supports file association by extension or shebang.
-Shebang runtimes can be proxied, for example mapping `#!/bin/bash` to
+Shebang runtimes can be proxied, for example, mapping `#!/bin/bash` to
 `C:\msys64\msys2_shell.cmd` with appropriate arguments.
 
 If no matching association exists in the configuration, Winbang searches for the
@@ -111,13 +111,13 @@ To recover, invoke the moved exe directly with `--reinstall-verbs`:
 C:\new\location\winbang.exe --reinstall-verbs
 ```
 
-This force-resets every verb Winbang subkey.
+This force-resets every Winbang verb subkey.
 
 ## Config File Template
 
 `%PROGRAMDATA%/Winbang/config.toml` or `%APPDATA%/Winbang/config.toml`
 
-The configuration files will not merge, only one will be used. If
+The configuration files will not merge; only one will be used. If
 `allow_user_config` is set to true in the `%PROGRAMDATA%` config, then the user
 config will be used. If not, the `%PROGRAMDATA%` config will be used.
 
