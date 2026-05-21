@@ -15,13 +15,12 @@ cargo install winbang
 
 ## Setup
 
-To get the full benefits of Winbang the following is required:
+To get the full benefits of Winbang, the following is required:
 
 1. Manually associate desired filetypes to `winbang.exe` (ideally `.sh`, `.zsh`,
    `.py`, and other common script extensions.)
-2. Follow the instructions for [Extensionless File Association](###
-   Extensionless File Association)
-3. Setup a [config file](## Config File Template) (optional, recommended)
+2. Follow **Extensionless File Association** instructions
+3. Set up a config file (optional, recommended)
 
 ### Extensionless File Association
 
@@ -69,7 +68,7 @@ binary. For example, `#!/usr/bin/env python3` directly executes `python3`. The
 
 > **WARNING**
 >
-> By default an action prompt is shown when launched from a GUI shell, disabling
+> By default, an action prompt is shown when launched from a GUI shell; disabling
 > this behavior could lead to an increased security risk. (The same risk as
 > running any untrusted application/script.)
 
