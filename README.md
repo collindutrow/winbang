@@ -197,6 +197,13 @@ exec_runtime = "perl"
 view_runtime = "runemacs"
 shebang_interpreter = "perl"
 extension = "pl"
+
+[[file_associations]]
+exec_runtime = "C:\\Program Files\\PowerShell\\7\\pwsh.exe"
+view_runtime = "code"
+shebang_interpreter = "powershell"
+extension = "ps1"
+exec_argv_override = "-NoProfile -ExecutionPolicy Bypass -File \"@{script}\""
 ```
 
 `exec_argv_override` will expand the following special variables:
